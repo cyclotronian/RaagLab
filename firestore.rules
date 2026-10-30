@@ -1,0 +1,16 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  // Secret, randomly generated 192-bit document IDs are bearer credentials.
+  // Only direct document gets/updates are allowed; listing is denied.
+  // NOTE: Anyone with the secret key/link can read or modify that progress.
+  match /privateSync/{secret} {
+   allow get: if secret.matches('^[0-9a-f]{48}$');
+   allow list, delete: if false;
+   allow create, update: if secret.matches('^[0-9a-f]{48}$')
+      && request.resource.data.keys().hasOnly(['progress', 'updatedAt'])
+      && request.resource.data.progress is map
+      && request.resource.data.progress.keys().size() <= 500;
+  }
+ }
+}
